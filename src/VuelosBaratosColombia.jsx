@@ -1,0 +1,324 @@
+import React, { useState, useEffect } from 'react';
+import { Search, Plane, Calendar, MapPin, DollarSign, Clock, Filter, TrendingDown } from 'lucide-react';
+
+export default function VuelosBaratosColombia() {
+  const [origen, setOrigen] = useState('MAD');
+  const [destino, setDestino] = useState('BOG');
+  const [fechaIda, setFechaIda] = useState('2025-07-15');
+  const [fechaVuelta, setFechaVuelta] = useState('2025-07-29');
+  const [pasajeros, setPasajeros] = useState(1);
+  const [filtroMaxPrecio, setFiltroMaxPrecio] = useState(1000);
+  const [ordenar, setOrdenar] = useState('precio');
+  const [vuelosEncontrados, setVuelosEncontrados] = useState([]);
+
+  const ciudadesColombia = [
+    { code: 'BOG', name: 'Bogotá', airport: 'El Dorado' },
+    { code: 'MDE', name: 'Medellín', airport: 'José María Córdova' },
+    { code: 'CLO', name: 'Cali', airport: 'Alfonso Bonilla Aragón' },
+    { code: 'CTG', name: 'Cartagena', airport: 'Rafael Núñez' },
+    { code: 'BAQ', name: 'Barranquilla', airport: 'Ernesto Cortissoz' },
+    { code: 'SMR', name: 'Santa Marta', airport: 'Simón Bolívar' },
+    { code: 'ADZ', name: 'San Andrés', airport: 'Gustavo Rojas' },
+    { code: 'PEI', name: 'Pereira', airport: 'Matecaña' }
+  ];
+
+  const ciudadesOrigen = [
+    { code: 'MAD', name: 'Madrid', airport: 'Barajas' },
+    { code: 'BCN', name: 'Barcelona', airport: 'El Prat' },
+    { code: 'BIO', name: 'Bilbao', airport: 'Loiu' },
+    { code: 'AGP', name: 'Málaga', airport: 'Costa del Sol' },
+    { code: 'SVQ', name: 'Sevilla', airport: 'San Pablo' },
+    { code: 'VLC', name: 'Valencia', airport: 'Manises' }
+  ];
+
+  const aerolineas = ['Avianca', 'Iberia', 'LATAM', 'Air Europa', 'Copa Airlines', 'Viva Air'];
+  const escalas = ['Directo', '1 escala', '2 escalas'];
+
+  const generarVuelos = () => {
+    const vuelos = [];
+    const numVuelos = 15;
+
+    for (let i = 0; i < numVuelos; i++) {
+      const aerolinea = aerolineas[Math.floor(Math.random() * aerolineas.length)];
+      const escala = escalas[Math.floor(Math.random() * escalas.length)];
+      const precioBase = escala === 'Directo' ? 500 : escala === '1 escala' ? 350 : 280;
+      const variacion = Math.random() * 400 - 100;
+      const precio = Math.round((precioBase + variacion) * pasajeros);
+      
+      const duracionBase = escala === 'Directo' ? 11 : escala === '1 escala' ? 15 : 19;
+      const duracion = duracionBase + Math.floor(Math.random() * 4);
+
+      const ciudadDestino = ciudadesColombia.find(c => c.code === destino);
+      const ciudadOrigen = ciudadesOrigen.find(c => c.code === origen);
+
+      vuelos.push({
+        id: i + 1,
+        aerolinea,
+        precio,
+        duracion,
+        escalas: escala,
+        horaSalida: `${Math.floor(Math.random() * 24).toString().padStart(2, '0')}:${['00', '15', '30', '45'][Math.floor(Math.random() * 4)]}`,
+        horaLlegada: `${Math.floor(Math.random() * 24).toString().padStart(2, '0')}:${['00', '15', '30', '45'][Math.floor(Math.random() * 4)]}`,
+        origen: ciudadOrigen?.name || 'Madrid',
+        destino: ciudadDestino?.name || 'Bogotá',
+        disponibilidad: Math.floor(Math.random() * 20) + 1,
+        oferta: Math.random() > 0.7
+      });
+    }
+
+    return vuelos;
+  };
+
+  useEffect(() => {
+    const vuelos = generarVuelos();
+    setVuelosEncontrados(vuelos);
+  }, [origen, destino, pasajeros]);
+
+  const vuelosFiltrados = vuelosEncontrados
+    .filter(v => v.precio <= filtroMaxPrecio)
+    .sort((a, b) => {
+      if (ordenar === 'precio') return a.precio - b.precio;
+      if (ordenar === 'duracion') return a.duracion - b.duracion;
+      return 0;
+    });
+
+  const precioMedio = vuelosEncontrados.length > 0 
+    ? Math.round(vuelosEncontrados.reduce((sum, v) => sum + v.precio, 0) / vuelosEncontrados.length)
+    : 0;
+
+  const precioMinimo = vuelosEncontrados.length > 0
+    ? Math.min(...vuelosEncontrados.map(v => v.precio))
+    : 0;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 p-4 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Plane className="w-10 h-10 text-blue-600" />
+            <h1 className="text-4xl font-bold text-gray-800">Vuelos Baratos a Colombia</h1>
+          </div>
+          <p className="text-gray-600 text-lg">Encuentra las mejores ofertas desde España</p>
+        </div>
+
+        {/* Formulario de búsqueda */}
+        <div className="bg-white rounded-2xl shadow-xl p-6 mb-8 border-2 border-blue-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            {/* Origen */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <MapPin className="w-4 h-4 inline mr-1" />
+                Origen
+              </label>
+              <select 
+                value={origen}
+                onChange={(e) => setOrigen(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+              >
+                {ciudadesOrigen.map(c => (
+                  <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Destino */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <MapPin className="w-4 h-4 inline mr-1" />
+                Destino en Colombia
+              </label>
+              <select 
+                value={destino}
+                onChange={(e) => setDestino(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+              >
+                {ciudadesColombia.map(c => (
+                  <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Fecha ida */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                Fecha ida
+              </label>
+              <input 
+                type="date"
+                value={fechaIda}
+                onChange={(e) => setFechaIda(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Fecha vuelta */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                Fecha vuelta
+              </label>
+              <input 
+                type="date"
+                value={fechaVuelta}
+                onChange={(e) => setFechaVuelta(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Pasajeros */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Pasajeros</label>
+              <input 
+                type="number"
+                min="1"
+                max="9"
+                value={pasajeros}
+                onChange={(e) => setPasajeros(parseInt(e.target.value) || 1)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+
+            {/* Precio máximo */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <DollarSign className="w-4 h-4 inline mr-1" />
+                Precio máximo: {filtroMaxPrecio}€
+              </label>
+              <input 
+                type="range"
+                min="200"
+                max="1500"
+                step="50"
+                value={filtroMaxPrecio}
+                onChange={(e) => setFiltroMaxPrecio(parseInt(e.target.value))}
+                className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+            </div>
+
+            {/* Ordenar */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <Filter className="w-4 h-4 inline mr-1" />
+                Ordenar por
+              </label>
+              <select 
+                value={ordenar}
+                onChange={(e) => setOrdenar(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none"
+              >
+                <option value="precio">Precio más bajo</option>
+                <option value="duracion">Menor duración</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Estadísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90 mb-1">Precio más bajo</p>
+                <p className="text-3xl font-bold">{precioMinimo}€</p>
+              </div>
+              <TrendingDown className="w-12 h-12 opacity-80" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90 mb-1">Precio medio</p>
+                <p className="text-3xl font-bold">{precioMedio}€</p>
+              </div>
+              <DollarSign className="w-12 h-12 opacity-80" />
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm opacity-90 mb-1">Vuelos encontrados</p>
+                <p className="text-3xl font-bold">{vuelosFiltrados.length}</p>
+              </div>
+              <Search className="w-12 h-12 opacity-80" />
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de vuelos */}
+        <div className="space-y-4">
+          {vuelosFiltrados.map(vuelo => (
+            <div 
+              key={vuelo.id}
+              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow border-2 border-gray-100 relative overflow-hidden"
+            >
+              {vuelo.oferta && (
+                <div className="absolute top-0 right-0 bg-red-500 text-white px-4 py-1 text-sm font-bold rounded-bl-lg">
+                  ¡OFERTA!
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Aerolínea y escalas */}
+                <div className="flex flex-col justify-center">
+                  <p className="font-bold text-xl text-gray-800 mb-1">{vuelo.aerolinea}</p>
+                  <p className="text-sm text-gray-600">{vuelo.escalas}</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    <Clock className="w-3 h-3 inline mr-1" />
+                    {vuelo.duracion}h total
+                  </p>
+                </div>
+
+                {/* Horarios */}
+                <div className="flex flex-col justify-center md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-800">{vuelo.horaSalida}</p>
+                      <p className="text-sm text-gray-600">{vuelo.origen}</p>
+                    </div>
+                    
+                    <div className="flex-1 mx-4">
+                      <div className="relative">
+                        <div className="h-1 bg-gray-300 rounded"></div>
+                        <Plane className="w-5 h-5 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 rotate-90" />
+                      </div>
+                    </div>
+
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-800">{vuelo.horaLlegada}</p>
+                      <p className="text-sm text-gray-600">{vuelo.destino}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Precio y reserva */}
+                <div className="flex flex-col justify-center items-end">
+                  <p className="text-sm text-gray-600 mb-1">Precio total</p>
+                  <p className="text-4xl font-bold text-blue-600 mb-2">{vuelo.precio}€</p>
+                  <p className="text-xs text-gray-500 mb-3">{vuelo.disponibilidad} asientos disponibles</p>
+                  <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg">
+                    Reservar ahora
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {vuelosFiltrados.length === 0 && (
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-8 text-center">
+            <p className="text-yellow-800 text-lg font-semibold">
+              No se encontraron vuelos con los filtros seleccionados
+            </p>
+            <p className="text-yellow-600 mt-2">Intenta ajustar el precio máximo o cambiar las fechas</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
